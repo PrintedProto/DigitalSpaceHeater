@@ -31,8 +31,8 @@ void setup()   {
   // Show image buffer on the display hardware.
   // Since the buffer is intialized with an Adafruit splashscreen
   // internally, this will display the splashscreen.
-  display.display();
-  delay(2000);
+  //display.display();
+  //delay(2000);
 
   // Clear the buffer.
   display.clearDisplay();
@@ -40,16 +40,22 @@ void setup()   {
 
 void loop() {
   // text display tests
-  display.setTextSize(2);
+  display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0,0);
-  display.print("88");
-  display.setCursor(0,64);
-  display.print("88");
-  display.setCursor(32,0);
-  display.print("88");
-  display.setCursor(32,64);
-  display.print("88");
+  display.println(" Current     SetPoint");
+  display.println("");
+  display.setTextSize(2);
+  display.println(" 88C   88C");
+  display.setTextSize(1);
+  display.println("");
+  display.println("Fan.I 88C    Coil ON");
+  display.setTextSize(1);
+  display.println("Fan.O 88C    hh:mm:ss");
+  //display.setCursor(32,0);
+  //display.print("88");
+  //display.setCursor(32,64);
+  //display.print("88");
   display.display();
   delay(2000);
   display.clearDisplay();
