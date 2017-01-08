@@ -38,8 +38,8 @@ void setup()   {
   display.clearDisplay();
 }
 
-void loop() {
-  // text display tests
+void updatescrn(uint8_t dhttemp, uint8_t settemp, uint8_t fintemp, uint8_t foutemp){
+  display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0,0);
@@ -52,11 +52,11 @@ void loop() {
   display.println("Fan.I 88C    Coil ON");
   display.setTextSize(1);
   display.println("Fan.O 88C    hh:mm:ss");
-  //display.setCursor(32,0);
-  //display.print("88");
-  //display.setCursor(32,64);
-  //display.print("88");
   display.display();
+}
+
+void loop() {
+  updatescrn(88,88,88,88);
   delay(2000);
-  display.clearDisplay();
+
 }
