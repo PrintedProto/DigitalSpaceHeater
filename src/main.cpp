@@ -5,10 +5,8 @@
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
-#include <DHT_U.h>
-//#include <string.h>
+#include <SparkFun_RHT03.h>
+#include <OneWire.h>
 
 // Software SPI
 #define OLED_MOSI   9
@@ -33,14 +31,18 @@ volatile int oldEncPos = 20; //stores the last encoder position value so we can 
 volatile byte reading = 0; //somewhere to store the direct values we read from our interrupt pins before checking to see if we have moved a whole detent
 static int encButton = 4;
 
-//DHT22 sensor
-//#define DHTPIN            6
-//#define DHTTYPE           DHT22
-//DHT_Unified dht(DHTPIN, DHTTYPE);
-//uint32_t delayMS;
+//DHT22/rht03/am2302 sensor
+const int RHT03_DATA_PIN = 7; // RHT03 data pin
+RHT03 rht; // This creates a RTH03 object, which we'll use to interact with the sensor
+
+//DS18B20
+#define DS18S20_ID 0x10
+#define DS18B20_ID 0x28
+OneWire  ds(6);
 
 //screen variables
-volatile int dhttemp, fintemp, foutemp, butpres, dhtrh, settemp;
+volatile int butpres, settemp;
+volatile float dhttemp, fintemp, foutemp, dhtrh;
 
 //encoder functions
 void PinA(){
@@ -93,8 +95,8 @@ void setup()   {
   pinMode(13, OUTPUT);
 
   //dht22 sensor
-  //dht.begin(); //initializes dht22
-  // Print temperature sensor details.
+  rht.begin(RHT03_DATA_PIN); //initializes dht22
+
   settemp = 20;
   dhttemp = 1;
   dhtrh = 1;
@@ -151,27 +153,56 @@ void adjustT(){
 }
 
 void getDhtinfo(){
-  //Serial.println("1");
-  //sensors_event_t event;
-  //Serial.println("2");
-  //dht.temperature().getEvent(&event);
-  //Serial.println("3");
-  if (isnan(event.temperature)) {
-    dhttemp = 0;
-    Serial.println(event.temperature);
+                                 // Call rht.update() to get new humidity and temperature values from the sensor.
+  int updateRet = rht.update(); // If successful, the update() function will return 1.
+                                // If update fails, it will return a value <0
+  if (updateRet == 1) {
+    //float latestHumidity = rht.humidity();// The humidity(), tempC(), and tempF() functions can be called -- after
+    //float latestTempC = rht.tempC();// a successful update() -- to get the last humidity and temperature
+    //Serial.println("Humidity: " + String(latestHumidity, 1) + " %");
+    //Serial.println("Temp (C): " + String(latestTempC, 1) + " deg C");
+    dhttemp = rht.tempC();
+    dhtrh = rht.humidity();
   }
   else {
-    dhttemp = event.temperature;
+    delay(RHT_READ_INTERVAL_MS);// If the update failed, try delaying for RHT_READ_INTERVAL_MS ms before
   }
-  // Get humidity event and print its value.
-  dht.humidity().getEvent(&event);
-  if (isnan(event.relative_humidity)) {
-    dhtrh = 0;
-  }
-  else {
-    dhtrh = event.relative_humidity;
-  }
-  delay(delayMS);
+  delay(1000);
+}
+
+void getDs18b20(){
+   byte i;
+   byte present = 0;
+   byte data[12];
+   byte addr[8];
+   //find a device
+   if (!ds.search(addr)) {
+   ds.reset_search();
+   return false;
+   }
+   if (OneWire::crc8( addr, 7) != addr[7]) {
+   return false;
+   }
+   if (addr[0] != DS18S20_ID && addr[0] != DS18B20_ID) {
+   return false;
+   }
+   ds.reset();
+   ds.select(addr);
+   // Start conversion
+   ds.write(0x44, 1);
+   // Wait some time...
+   delay(850);
+   present = ds.reset();
+   ds.select(addr);
+   // Issue Read scratchpad command
+   ds.write(0xBE);
+   // Receive 9 bytes
+   for ( i = 0; i < 9; i++) {
+   data[i] = ds.read();
+   }
+   // Calculate temperature value
+   fintemp = ( (data[1] << 8) + data[0] )*0.0625;
+   return true;
 }
 
 void loop() {
