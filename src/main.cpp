@@ -1,7 +1,6 @@
 
 
 
-
 #include <SPI.h>
 #include <Wire.h>
 #include <Adafruit_SSD1306.h>
@@ -32,7 +31,7 @@ volatile byte reading = 0; //somewhere to store the direct values we read from o
 static int encButton = 4;
 
 //DHT22/rht03/am2302 sensor
-const int RHT03_DATA_PIN = 7; // RHT03 data pin
+const int RHT03_DATA_PIN = 14; // RHT03 data pin
 RHT03 rht; // This creates a RTH03 object, which we'll use to interact with the sensor
 
 //DS18B20
@@ -111,14 +110,22 @@ void updatescrn(){
   display.setTextSize(1);
   display.setTextColor(WHITE);
   display.setCursor(0,0);
-  display.println(" Current     SetPoint");
-  display.println("");
+  display.println(" Current     SetPoint\n"); //line 1
   display.setTextSize(2);
-  display.println(" " + String(dhttemp) + "C   " + String(settemp) + "C");
+  display.print(" ");                         //line 2
+  display.print(dhttemp,0);
+  display.print("C   ");
+  display.print(settemp,0);
+  display.print("C\n");
   display.setTextSize(1);
-  display.println("");
-  display.println("Fan.I " + String(fintemp) + "C    Coil ON");
-  display.println("Fan.O " + String(foutemp) + "C      " + String(dhtrh) + "%RH");
+  display.print("Fan.I ");                  //line 3
+  display.print(fintemp,0);
+  display.print("C    Coil ON");
+  display.print("\nFan.O ");                  //line 4
+  display.print(foutemp,0);
+  display.print("C      ");
+  display.print(dhtrh,0);
+  display.print("%RH");
   display.display();
 }
 
