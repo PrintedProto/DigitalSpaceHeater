@@ -34,10 +34,10 @@ volatile byte reading = 0; //somewhere to store the direct values we read from o
 static int encButton = 4;
 
 //DHT22 sensor
-#define DHTPIN            6
-#define DHTTYPE           DHT22
-DHT_Unified dht(DHTPIN, DHTTYPE);
-uint32_t delayMS;
+//#define DHTPIN            6
+//#define DHTTYPE           DHT22
+//DHT_Unified dht(DHTPIN, DHTTYPE);
+//uint32_t delayMS;
 
 //screen variables
 volatile int dhttemp, fintemp, foutemp, butpres, dhtrh, settemp;
@@ -93,37 +93,13 @@ void setup()   {
   pinMode(13, OUTPUT);
 
   //dht22 sensor
-  dht.begin(); //initializes dht22
+  //dht.begin(); //initializes dht22
   // Print temperature sensor details.
   settemp = 20;
   dhttemp = 1;
   dhtrh = 1;
-/*
-  // Print temperature sensor details.
-  sensor_t sensor;
-  dht.temperature().getSensor(&sensor);
-  Serial.println("------------------------------------");
-  Serial.println("Temperature");
-  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
-  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
-  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
-  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" *C");
-  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" *C");
-  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" *C");
-  Serial.println("------------------------------------");
-  // Print humidity sensor details.
-  dht.humidity().getSensor(&sensor);
-  Serial.println("------------------------------------");
-  Serial.println("Humidity");
-  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
-  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
-  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
-  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println("%");
-  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println("%");
-  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println("%");
-  Serial.println("------------------------------------");
-  delayMS = sensor.min_delay / 1000;
-  */
+
+
 }
 
 //updates the screen
@@ -175,11 +151,11 @@ void adjustT(){
 }
 
 void getDhtinfo(){
-  Serial.println("1");
-  sensors_event_t event;
-  Serial.println("2");
-  dht.temperature().getEvent(&event);
-  Serial.println("3");
+  //Serial.println("1");
+  //sensors_event_t event;
+  //Serial.println("2");
+  //dht.temperature().getEvent(&event);
+  //Serial.println("3");
   if (isnan(event.temperature)) {
     dhttemp = 0;
     Serial.println(event.temperature);
@@ -199,11 +175,11 @@ void getDhtinfo(){
 }
 
 void loop() {
-  //Serial.println("Loop");
+  Serial.println("Loop");
   fintemp = 90;
   foutemp = 91;
-  //Serial.println("Polling DHT");
-  //getDhtinfo();
+  Serial.println("Polling DHT");
+  getDhtinfo();
   Serial.println("Temp= " + String(dhttemp));
   Serial.println("Humi= " + String(dhtrh));
   butpres = digitalRead(encButton);

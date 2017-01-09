@@ -1,84 +1,77 @@
-// DHT Temperature & Humidity Sensor
-// Unified Sensor Library Example
-// Written by Tony DiCola for Adafruit Industries
-// Released under an MIT license.
-// Depends on the following Arduino libraries:
-// - Adafruit Unified Sensor Library: https://github.com/adafruit/Adafruit_Sensor
-// - DHT Sensor Library: https://github.com/adafruit/DHT-sensor-library
-#include <SPI.h>
-#include <Wire.h>
-#include <Adafruit_Sensor.h>
-#include <DHT.h>
-#include <DHT_U.h>
+/*	RHT03-Example-Serial.cpp
+	Jim Lindblom <jim@sparkfun.com>
+	August 31, 2015
 
-#define DHTPIN            2         // Pin which is connected to the DHT sensor.
+    Ported to Arduino by Shawn Hymel
+    October 28, 2016
+	https://github.com/sparkfun/SparkFun_RHT03_Arduino_Library
 
-// Uncomment the type of sensor in use:
-//#define DHTTYPE           DHT11     // DHT 11
-#define DHTTYPE           DHT22     // DHT 22 (AM2302)
-//#define DHTTYPE           DHT21     // DHT 21 (AM2301)
+	This a simple example sketch for the SparkFunRHT03 Ardiuno
+	library.
 
-// See guide for details on sensor wiring and usage:
-//   https://learn.adafruit.com/dht/overview
+	Looking at the front (grated side) of the RHT03, the pinout is as follows:
+	 1     2        3       4
+	VCC  DATA  No-Connect  GND
 
-DHT_Unified dht(DHTPIN, DHTTYPE);
+	Connect the data pin to Arduino pin D4. Power the RHT03 off the 3.3V bus.
 
-uint32_t delayMS;
+	A 10k pullup resistor can be added to the data pin, though it seems to
+	work without it.
 
-void setup() {
-  Serial.begin(9600);
-  // Initialize device.
-  dht.begin();
-  Serial.println("DHTxx Unified Sensor Example");
-  // Print temperature sensor details.
-  sensor_t sensor;
-  dht.temperature().getSensor(&sensor);
-  Serial.println("------------------------------------");
-  Serial.println("Temperature");
-  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
-  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
-  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
-  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println(" *C");
-  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println(" *C");
-  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println(" *C");
-  Serial.println("------------------------------------");
-  // Print humidity sensor details.
-  dht.humidity().getSensor(&sensor);
-  Serial.println("------------------------------------");
-  Serial.println("Humidity");
-  Serial.print  ("Sensor:       "); Serial.println(sensor.name);
-  Serial.print  ("Driver Ver:   "); Serial.println(sensor.version);
-  Serial.print  ("Unique ID:    "); Serial.println(sensor.sensor_id);
-  Serial.print  ("Max Value:    "); Serial.print(sensor.max_value); Serial.println("%");
-  Serial.print  ("Min Value:    "); Serial.print(sensor.min_value); Serial.println("%");
-  Serial.print  ("Resolution:   "); Serial.print(sensor.resolution); Serial.println("%");
-  Serial.println("------------------------------------");
-  // Set delay between sensor readings based on sensor details.
-  delayMS = sensor.min_delay / 1000;
+    Development environment specifics:
+	Arduino IDE v1.6.5
+	Distributed as-is; no warranty is given.
+*/
+
+// Include the library:
+#include <SparkFun_RHT03.h>
+
+/////////////////////
+// Pin Definitions //
+/////////////////////
+const int RHT03_DATA_PIN = 7; // RHT03 data pin
+
+///////////////////////////
+// RHT03 Object Creation //
+///////////////////////////
+RHT03 rht; // This creates a RTH03 object, which we'll use to interact with the sensor
+
+void setup()
+{
+	Serial.begin(9600); // Serial is used to print sensor readings.
+
+	// Call rht.begin() to initialize the sensor and our data pin
+	rht.begin(RHT03_DATA_PIN);
+
 }
 
-void loop() {
-  // Delay between measurements.
-  delay(delayMS);
-  // Get temperature event and print its value.
-  sensors_event_t event;
-  dht.temperature().getEvent(&event);
-  if (isnan(event.temperature)) {
-    Serial.println("Error reading temperature!");
-  }
-  else {
-    Serial.print("Temperature: ");
-    Serial.print(event.temperature);
-    Serial.println(" *C");
-  }
-  // Get humidity event and print its value.
-  dht.humidity().getEvent(&event);
-  if (isnan(event.relative_humidity)) {
-    Serial.println("Error reading humidity!");
-  }
-  else {
-    Serial.print("Humidity: ");
-    Serial.print(event.relative_humidity);
-    Serial.println("%");
-  }
+void loop()
+{
+	// Call rht.update() to get new humidity and temperature values from the sensor.
+	int updateRet = rht.update();
+
+	// If successful, the update() function will return 1.
+	// If update fails, it will return a value <0
+	if (updateRet == 1)
+	{
+		// The humidity(), tempC(), and tempF() functions can be called -- after
+		// a successful update() -- to get the last humidity and temperature
+		// value
+		float latestHumidity = rht.humidity();
+		float latestTempC = rht.tempC();
+		float latestTempF = rht.tempF();
+
+		// Now print the values:
+		Serial.println("Humidity: " + String(latestHumidity, 1) + " %");
+		Serial.println("Temp (F): " + String(latestTempF, 1) + " deg F");
+		Serial.println("Temp (C): " + String(latestTempC, 1) + " deg C");
+	}
+	else
+	{
+		// If the update failed, try delaying for RHT_READ_INTERVAL_MS ms before
+		// trying again.
+		delay(RHT_READ_INTERVAL_MS);
+	}
+
+	delay(1000);
 }
