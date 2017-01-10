@@ -43,8 +43,15 @@ DeviceAddress Probe01 = { 0x28, 0xFF, 0x29, 0xAA, 0x15, 0x15, 0x01, 0xC3 };
 DeviceAddress Probe02 = { 0x28, 0xFF, 0x2B, 0x67, 0x15, 0x15, 0x01, 0xE4 };
 
 //screen variables
-volatile int butpres, settemp;
+volatile byte butpres, settemp, pixpos;
 volatile float dhttemp, fintemp, foutemp, dhtrh;
+
+//relays
+#define fanRelay 16
+#define loRelay 17
+#define hiRelay 18
+#define modeSelect 6
+volatile byte fanState, loState, hiState, modeState;
 
 //encoder functions
 void PinA(){
@@ -73,28 +80,18 @@ void PinB(){
 //encoder functions
 
 void setup()   {
-  Serial.begin(9600);
-
-  // by default, we'll generate the high voltage from the 3.3v line internally! (neat!)
+  //Serial.begin(9600);
   display.begin(SSD1306_SWITCHCAPVCC);
-  // init done
-
-  // Show image buffer on the display hardware.
-  // Since the buffer is intialized with an Adafruit splashscreen
-  // internally, this will display the splashscreen.
-  //display.display();
-  //delay(2000);
 
   // Clear the buffer.
   display.clearDisplay();
 
   //encoder
-  pinMode(encButton, INPUT_PULLUP); // buton press
-  pinMode(pinA, INPUT_PULLUP); // set pinA as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
-  pinMode(pinB, INPUT_PULLUP); // set pinB as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
+  pinMode(encButton, INPUT); // buton press
+  pinMode(pinA, INPUT); // set pinA as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
+  pinMode(pinB, INPUT); // set pinB as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
   //attachInterrupt(digitalPinToInterrupt(pinA),PinA,RISING); // set an interrupt on PinA, looking for a rising edge signal and executing the "PinA" Interrupt Service Routine (below)
   //attachInterrupt(digitalPinToInterrupt(pinB),PinB,RISING); // set an interrupt on PinB, looking for a rising edge signal and executing the "PinB" Interrupt Service Routine (below)
-  pinMode(13, OUTPUT);
 
   //dht22 sensor
   rht.begin(RHT03_DATA_PIN); //initializes dht22
@@ -104,17 +101,31 @@ void setup()   {
   sensors.setResolution(Probe01, 10);
   sensors.setResolution(Probe02, 10);
 
+  //Relays
+  pinMode(13, OUTPUT);
+  pinMode(fanRelay, OUTPUT);  //fan relay
+  pinMode(loRelay, OUTPUT);  //low heat relay
+  pinMode(hiRelay, OUTPUT);  //high heat relay
+  pinMode(modeSelect, INPUT);  //mode select switch
+
   settemp = 20;
   dhttemp = 1;
   dhtrh = 1;
   fintemp = 1;
   foutemp = 1;
-
+  fanState = 1;
+  loState = 0;
+  hiState = 0;
+  pixpos = 1;
+  delay(5000);
 }
 
 //updates the screen
 //void updatescrn(uint8_t dhttemp, uint8_t dhtrh, uint8_t settemp, uint8_t fintemp, uint8_t foutemp){
 void updatescrn(){
+  if (pixpos >= 10){
+    pixpos = 1;
+  }
   display.clearDisplay();
   display.setTextSize(1);
   display.setTextColor(WHITE);
@@ -135,7 +146,9 @@ void updatescrn(){
   display.print("C      ");
   display.print(dhtrh,0);
   display.print("%RH");
+  display.drawPixel(pixpos, 62, WHITE);
   display.display();
+  pixpos ++;
 }
 
 //adjusts Temp setpoint
@@ -197,22 +210,38 @@ float getDs18b20(DeviceAddress deviceAddress){
 }
 
 void loop() {
-  //Serial.println("Loop");
+
   sensors.requestTemperatures();
   fintemp = getDs18b20(Probe01);
   foutemp = getDs18b20(Probe02);
-  //Serial.println("Polling DHT");
+
   getDhtinfo();
-  //Serial.println("Temp= " + String(dhttemp));
-  //Serial.println("Humi= " + String(dhtrh));
+
   butpres = digitalRead(encButton);
-  //digitalWrite(13, !butpres);
-  //Serial.println("butpres =" + String(butpres));
-  if (butpres==0){
+  if (butpres == 0){
     adjustT();
-      }
+  }
+
+  modeState = digitalRead(modeSelect);
+  if (fanState == 0){
+    digitalWrite(fanRelay, HIGH);
+    fanState = 1;
+  }
+
+  if ((dhttemp < (settemp - 5)) && (modeState == 0)){
+    digitalWrite(loRelay, HIGH);
+  }
+  else if ((dhttemp < (settemp - 5)) && (modeState == 1)){
+    digitalWrite(loRelay, HIGH);
+    digitalWrite(hiRelay, HIGH);
+  }
+
+  if ((dhttemp > (settemp + 2))){
+    digitalWrite(loRelay, LOW);
+    digitalWrite(hiRelay, LOW);
+  }
 
   updatescrn();
-  //Serial.println("Scrn updated");
+
 
 }
