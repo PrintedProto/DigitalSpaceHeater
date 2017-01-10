@@ -54,6 +54,8 @@ volatile float dhttemp, fintemp, foutemp, dhtrh;
 #define hiRelay 18
 #define modeSelect 6
 volatile byte fanState, loState, hiState, modeState;
+const int failsafeMaxtemp = 80;
+
 /*
 //encoder functions
 void PinA(){
@@ -125,7 +127,7 @@ void setup()   {
 //updates the screen
 //void updatescrn(uint8_t dhttemp, uint8_t dhtrh, uint8_t settemp, uint8_t fintemp, uint8_t foutemp){
 void updatescrn(){
-  if (pixpos >= 10){
+  if (pixpos >= 120){
     pixpos = 1;
   }
   display.clearDisplay();
@@ -149,6 +151,9 @@ void updatescrn(){
   display.print(dhtrh,0);
   display.print("%RH");
   display.drawPixel(pixpos, 62, WHITE);
+  display.drawPixel(pixpos, 61, WHITE);
+  display.drawPixel(pixpos+1, 62, WHITE);
+  display.drawPixel(pixpos+1, 61, WHITE);
   display.display();
   pixpos ++;
 }
@@ -157,10 +162,20 @@ void updatescrn(){
 void adjustT(){
   while(butpres == 0){
     if(digitalRead(upButton) == LOW){
-      settemp ++;
+      if(settemp < 75){
+        settemp ++;
+      }
+      else {
+        settemp = 75;
+      }
     }
     if (digitalRead(dnButton) == LOW){
-      settemp --;
+      if(settemp > 1){
+        settemp --;
+      }
+      else {
+        settemp = 1;
+      }
     }
     delay(300);
     butpres = digitalRead(encButton);
@@ -247,15 +262,15 @@ void loop() {
     digitalWrite(fanRelay, HIGH);
     fanState = 1;
   }
-
-  if ((dhttemp < (settemp - 5)) && (modeState == 0)){
-    digitalWrite(loRelay, HIGH);
+  if ((dhttemp < failsafeMaxtemp) && (fintemp < failsafeMaxtemp) && (foutemp < failsafeMaxtemp)){
+    if ((dhttemp < (settemp - 5)) && (modeState == 0)){
+      digitalWrite(loRelay, HIGH);
+    }
+    else if ((dhttemp < (settemp - 5)) && (modeState == 1)){
+      digitalWrite(loRelay, HIGH);
+      digitalWrite(hiRelay, HIGH);
+    }
   }
-  else if ((dhttemp < (settemp - 5)) && (modeState == 1)){
-    digitalWrite(loRelay, HIGH);
-    digitalWrite(hiRelay, HIGH);
-  }
-
   if ((dhttemp > (settemp + 2))){
     digitalWrite(loRelay, LOW);
     digitalWrite(hiRelay, LOW);
