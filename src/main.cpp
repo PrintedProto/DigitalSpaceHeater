@@ -6,6 +6,7 @@
 #include <Adafruit_SSD1306.h>
 #include <SparkFun_RHT03.h>
 #include <OneWire.h>
+#include <DallasTemperature.h>
 
 // Software SPI
 #define OLED_MOSI   9
@@ -35,9 +36,11 @@ const int RHT03_DATA_PIN = 14; // RHT03 data pin
 RHT03 rht; // This creates a RTH03 object, which we'll use to interact with the sensor
 
 //DS18B20
-#define DS18S20_ID 0x10
-#define DS18B20_ID 0x28
-OneWire  ds(6);
+#define ONE_WIRE_BUS_PIN 19
+OneWire oneWire(ONE_WIRE_BUS_PIN);
+DallasTemperature sensors(&oneWire);
+DeviceAddress Probe01 = { 0x28, 0xFF, 0x29, 0xAA, 0x15, 0x15, 0x01, 0xC3 };
+DeviceAddress Probe02 = { 0x28, 0xFF, 0x2B, 0x67, 0x15, 0x15, 0x01, 0xE4 };
 
 //screen variables
 volatile int butpres, settemp;
@@ -96,10 +99,16 @@ void setup()   {
   //dht22 sensor
   rht.begin(RHT03_DATA_PIN); //initializes dht22
 
+  //DS18B20
+  sensors.begin();
+  sensors.setResolution(Probe01, 10);
+  sensors.setResolution(Probe02, 10);
+
   settemp = 20;
   dhttemp = 1;
   dhtrh = 1;
-
+  fintemp = 1;
+  foutemp = 1;
 
 }
 
@@ -115,10 +124,10 @@ void updatescrn(){
   display.print(" ");                         //line 2
   display.print(dhttemp,0);
   display.print("C   ");
-  display.print(settemp,0);
-  display.print("C\n");
+  display.print(settemp);
+  display.print("C");
   display.setTextSize(1);
-  display.print("Fan.I ");                  //line 3
+  display.print("\n\n\nFan.I ");                  //line 3
   display.print(fintemp,0);
   display.print("C    Coil ON");
   display.print("\nFan.O ");                  //line 4
@@ -177,49 +186,25 @@ void getDhtinfo(){
   delay(1000);
 }
 
-void getDs18b20(){
-   byte i;
-   byte present = 0;
-   byte data[12];
-   byte addr[8];
-   //find a device
-   if (!ds.search(addr)) {
-   ds.reset_search();
-   return false;
+float getDs18b20(DeviceAddress deviceAddress){
+  float tempC = sensors.getTempC(deviceAddress);
+   if (tempC == -127.00) {
+   Serial.print("Error getting temperature  ");
    }
-   if (OneWire::crc8( addr, 7) != addr[7]) {
-   return false;
+   else {
+   return tempC;
    }
-   if (addr[0] != DS18S20_ID && addr[0] != DS18B20_ID) {
-   return false;
-   }
-   ds.reset();
-   ds.select(addr);
-   // Start conversion
-   ds.write(0x44, 1);
-   // Wait some time...
-   delay(850);
-   present = ds.reset();
-   ds.select(addr);
-   // Issue Read scratchpad command
-   ds.write(0xBE);
-   // Receive 9 bytes
-   for ( i = 0; i < 9; i++) {
-   data[i] = ds.read();
-   }
-   // Calculate temperature value
-   fintemp = ( (data[1] << 8) + data[0] )*0.0625;
-   return true;
 }
 
 void loop() {
-  Serial.println("Loop");
-  fintemp = 90;
-  foutemp = 91;
-  Serial.println("Polling DHT");
+  //Serial.println("Loop");
+  sensors.requestTemperatures();
+  fintemp = getDs18b20(Probe01);
+  foutemp = getDs18b20(Probe02);
+  //Serial.println("Polling DHT");
   getDhtinfo();
-  Serial.println("Temp= " + String(dhttemp));
-  Serial.println("Humi= " + String(dhtrh));
+  //Serial.println("Temp= " + String(dhttemp));
+  //Serial.println("Humi= " + String(dhtrh));
   butpres = digitalRead(encButton);
   //digitalWrite(13, !butpres);
   //Serial.println("butpres =" + String(butpres));
@@ -228,6 +213,6 @@ void loop() {
       }
 
   updatescrn();
-  Serial.println("Scrn updated");
+  //Serial.println("Scrn updated");
 
 }
