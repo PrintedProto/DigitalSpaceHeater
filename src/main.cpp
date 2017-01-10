@@ -87,9 +87,9 @@ void setup()   {
   display.clearDisplay();
 
   //encoder
-  pinMode(encButton, INPUT); // buton press
-  pinMode(pinA, INPUT); // set pinA as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
-  pinMode(pinB, INPUT); // set pinB as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
+  pinMode(encButton, INPUT_PULLUP); // buton press
+  pinMode(pinA, INPUT_PULLUP); // set pinA as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
+  pinMode(pinB, INPUT_PULLUP); // set pinB as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
   //attachInterrupt(digitalPinToInterrupt(pinA),PinA,RISING); // set an interrupt on PinA, looking for a rising edge signal and executing the "PinA" Interrupt Service Routine (below)
   //attachInterrupt(digitalPinToInterrupt(pinB),PinB,RISING); // set an interrupt on PinB, looking for a rising edge signal and executing the "PinB" Interrupt Service Routine (below)
 
@@ -106,7 +106,7 @@ void setup()   {
   pinMode(fanRelay, OUTPUT);  //fan relay
   pinMode(loRelay, OUTPUT);  //low heat relay
   pinMode(hiRelay, OUTPUT);  //high heat relay
-  pinMode(modeSelect, INPUT);  //mode select switch
+  pinMode(modeSelect, INPUT_PULLUP);  //mode select switch
 
   settemp = 20;
   dhttemp = 1;
@@ -171,10 +171,10 @@ void adjustT(){
       }
       updatescrn();
       //Serial.println("update screen triggered");
-      if(!digitalRead(encButton)){
-        delay(1000);
-        butpres = !digitalRead(encButton);
-      }
+      //if(!digitalRead(encButton)){
+        //delay(1000);
+        butpres = digitalRead(encButton);
+      //}
     }
     detachInterrupt(digitalPinToInterrupt(pinA)); // Removes interrupts so values will only increment when needed
     detachInterrupt(digitalPinToInterrupt(pinB));
@@ -219,7 +219,11 @@ void loop() {
 
   butpres = digitalRead(encButton);
   if (butpres == 0){
+    digitalWrite(13, HIGH);
     adjustT();
+  }
+  else {
+    digitalWrite(13, LOW);
   }
 
   modeState = digitalRead(modeSelect);
