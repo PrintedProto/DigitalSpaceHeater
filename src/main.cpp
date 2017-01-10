@@ -21,15 +21,17 @@ Adafruit_SSD1306 display(OLED_MOSI, OLED_CLK, OLED_DC, OLED_RESET, OLED_CS);
 #define YPOS 1
 #define DELTAY 2
 
-//rotary encoder
-static int pinA = 2; // Our first hardware interrupt pin is digital pin 2
-static int pinB = 3; // Our second hardware interrupt pin is digital pin 3
-volatile byte aFlag = 0; // let's us know when we're expecting a rising edge on pinA to signal that the encoder has arrived at a detent
-volatile byte bFlag = 0; // let's us know when we're expecting a rising edge on pinB to signal that the encoder has arrived at a detent (opposite direction to when aFlag is set)
-volatile int encoderPos = 20; //this variable stores our current value of encoder position. Change to int or uin16_t instead of byte if you want to record a larger range than 0-255
-volatile int oldEncPos = 20; //stores the last encoder position value so we can compare to the current reading and see if it has changed (so we know when to print to the serial monitor)
-volatile byte reading = 0; //somewhere to store the direct values we read from our interrupt pins before checking to see if we have moved a whole detent
+
+//buttons
+static int upButton = 2; // Our first hardware interrupt pin is digital pin 2
+static int dnButton = 3; // Our second hardware interrupt pin is digital pin 3
+//volatile byte aFlag = 0; // let's us know when we're expecting a rising edge on pinA to signal that the encoder has arrived at a detent
+//volatile byte bFlag = 0; // let's us know when we're expecting a rising edge on pinB to signal that the encoder has arrived at a detent (opposite direction to when aFlag is set)
+//volatile int encoderPos = 20; //this variable stores our current value of encoder position. Change to int or uin16_t instead of byte if you want to record a larger range than 0-255
+//volatile int oldEncPos = 20; //stores the last encoder position value so we can compare to the current reading and see if it has changed (so we know when to print to the serial monitor)
+//volatile byte reading = 0; //somewhere to store the direct values we read from our interrupt pins before checking to see if we have moved a whole detent
 static int encButton = 4;
+
 
 //DHT22/rht03/am2302 sensor
 const int RHT03_DATA_PIN = 14; // RHT03 data pin
@@ -52,7 +54,7 @@ volatile float dhttemp, fintemp, foutemp, dhtrh;
 #define hiRelay 18
 #define modeSelect 6
 volatile byte fanState, loState, hiState, modeState;
-
+/*
 //encoder functions
 void PinA(){
   cli(); //stop interrupts happening before we read pin values
@@ -78,7 +80,7 @@ void PinB(){
   sei(); //restart interrupts
 }
 //encoder functions
-
+*/
 void setup()   {
   //Serial.begin(9600);
   display.begin(SSD1306_SWITCHCAPVCC);
@@ -88,8 +90,8 @@ void setup()   {
 
   //encoder
   pinMode(encButton, INPUT_PULLUP); // buton press
-  pinMode(pinA, INPUT_PULLUP); // set pinA as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
-  pinMode(pinB, INPUT_PULLUP); // set pinB as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
+  pinMode(upButton, INPUT_PULLUP); // set pinA as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
+  pinMode(dnButton, INPUT_PULLUP); // set pinB as an input, pulled HIGH to the logic voltage (5V or 3.3V for most cases)
   //attachInterrupt(digitalPinToInterrupt(pinA),PinA,RISING); // set an interrupt on PinA, looking for a rising edge signal and executing the "PinA" Interrupt Service Routine (below)
   //attachInterrupt(digitalPinToInterrupt(pinB),PinB,RISING); // set an interrupt on PinB, looking for a rising edge signal and executing the "PinB" Interrupt Service Routine (below)
 
@@ -153,6 +155,20 @@ void updatescrn(){
 
 //adjusts Temp setpoint
 void adjustT(){
+  while(butpres == 0){
+    if(digitalRead(upButton) == LOW){
+      settemp ++;
+    }
+    if (digitalRead(dnButton) == LOW){
+      settemp --;
+    }
+    delay(300);
+    butpres = digitalRead(encButton);
+    updatescrn();
+    }
+}
+/*
+void adjustT(){
   //Serial.println("IF statement triggered");
   attachInterrupt(digitalPinToInterrupt(pinA),PinA,RISING); // set an interrupt on PinA and B, looking for a rising edge signal
   attachInterrupt(digitalPinToInterrupt(pinB),PinB,RISING); // and executing the PinA() Interrupt Service Routine
@@ -180,7 +196,7 @@ void adjustT(){
     detachInterrupt(digitalPinToInterrupt(pinB));
   //  Serial.println("Interrupts dettached");
 }
-
+*/
 void getDhtinfo(){
                                  // Call rht.update() to get new humidity and temperature values from the sensor.
   int updateRet = rht.update(); // If successful, the update() function will return 1.
